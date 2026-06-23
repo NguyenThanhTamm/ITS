@@ -19,7 +19,7 @@ function App() {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
             <AppRoutes />
           </BrowserRouter>
         </ThemeProvider>
