@@ -13,7 +13,6 @@ import {
   Terminal,
   ChevronDown,
   ChevronUp,
-  Calculator,
   Server,
   PlusCircle,
   CheckCircle2,
@@ -23,7 +22,10 @@ import {
   Video,
   Database,
   Activity,
-  ShoppingCart
+  ShoppingCart,
+  Search,
+  Grid,
+  Tag
 } from 'lucide-react';
 
 interface ServiceItem {
@@ -45,6 +47,7 @@ interface ProductItem {
   description: string;
   image: string;
   specs: string[];
+  category: 'DEVICE' | 'CABLE' | 'ACCESSORY';
 }
 
 export const ServicesPage: React.FC = () => {
@@ -52,27 +55,24 @@ export const ServicesPage: React.FC = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
-  // Accordion active index
+  // Active view tab
+  const [activeTab, setActiveTab] = useState<'DIRECTORY' | 'HARDWARE'>('DIRECTORY');
+
+  // Accordion active index for services
   const [activeId, setActiveId] = useState<string | null>('srv-1');
 
-  // Active view tab (Directory of cards vs. Network Hardware Catalog vs. Budget Calculator)
-  const [activeTab, setActiveTab] = useState<'DIRECTORY' | 'HARDWARE' | 'CALCULATOR'>('DIRECTORY');
+  // Quotation confirmation state for services
+  const [srvQuoteCreatedId, setSrvQuoteCreatedId] = useState<string | null>(null);
 
   // Order confirmation state for hardware products
   const [productOrderCreatedId, setProductOrderCreatedId] = useState<string | null>(null);
 
-  // Quote confirmation state for individual services
-  const [srvQuoteCreatedId, setSrvQuoteCreatedId] = useState<string | null>(null);
-
   // Quantity selector state for products
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  // Budget Calculator States
-  const [infraSize, setInfraSize] = useState<'NONE' | 'SMALL' | 'MEDIUM' | 'LARGE'>('MEDIUM');
-  const [maintenance, setMaintenance] = useState<'NONE' | 'BASIC' | 'PREMIUM'>('BASIC');
-  const [devHours, setDevHours] = useState<number>(20);
-  const [securitySuite, setSecuritySuite] = useState<boolean>(false);
-  const [quoteCreated, setQuoteCreated] = useState<boolean>(false);
+  // Product Catalog search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'DEVICE' | 'CABLE' | 'ACCESSORY'>('ALL');
 
   const services: ServiceItem[] = [
     {
@@ -92,7 +92,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Bảo vệ cổng kết nối doanh nghiệp, nhân sự làm việc từ xa và cổng ứng dụng API sử dụng Cloudflare và Fortinet.',
       fullDesc: 'Mô hình bảo mật xác thực liên tục. Chúng tôi thay thế các cổng kết nối VPN truyền thống có nhiều rào cản bảo mật bằng chính sách xác thực SSO của Okta/EntraID, kiểm tra thiết bị đầu cuối và cấu hình tường lửa chuyên sâu.',
       technologies: ['Cloudflare Zero Trust', 'Tường lửa Fortinet UTM', 'MFA SSO (Okta, EntraID)', 'Bảo vệ WAF & Chặn tấn công DDoS'],
-      features: ['Kiểm tra an toàn thiết bị liên tục', 'Cấp quyền truy cập granular ở mức API', 'Cổng proxy kết nối an toàn cho nhân sự từ xa', 'Kiểm toán đánh giá lỗ hổng định kỳ'],
+      features: ['Kiểm tra an toàn thiết bị liên tục', 'Cổng proxy kết nối an toàn cho nhân sự từ xa', 'Kiểm toán đánh giá lỗ hổng định kỳ'],
       price: 2800
     },
     {
@@ -102,7 +102,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Tự động hóa tích hợp và triển khai liên tục, tích hợp sẵn các lớp quét bảo mật mã nguồn tự động.',
       fullDesc: 'Quy trình triển khai mã nguồn tự động khi lập trình viên thực hiện commit. Các công cụ quét lỗ hổng thư viện và rò rỉ thông tin mật (Secrets) được kích hoạt ngay trong tiến trình build để loại bỏ lỗi sớm.',
       technologies: ['GitLab CI/CD', 'ArgoCD GitOps', 'SonarQube Quality Gates', 'Snyk & Trivy Scanners', 'GitHub Actions'],
-      features: ['Chặn pipeline khi phát hiện lỗi bảo mật nghiêm trọng', 'Triển khai rolling không gián đoạn trên Kubernetes', 'Mô phỏng kiểm tra tải trọng ứng dụng', 'Hệ thống quản lý phiên bản đóng gói tập trung'],
+      features: ['Chặn pipeline khi phát hiện lỗi bảo mật nghiêm trọng', 'Triển khai rolling không gián đoạn trên Kubernetes', 'Mô phỏng kiểm tra tải trọng ứng dụng'],
       price: 3200
     },
     {
@@ -112,7 +112,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Phát triển backend hiệu năng cao và các giao diện bảng điều khiển quản trị trực quan, hiện đại.',
       fullDesc: 'Xây dựng hệ thống SaaS hoàn chỉnh từ bản vẽ thiết kế đến cơ sở dữ liệu vận hành thực tế. Chúng tôi phát triển các trang quản trị trực quan, phân tích dữ liệu chuyên sâu và kết nối API tối ưu.',
       technologies: ['React 19 / Next.js', 'Node.js Express / NestJS', 'PostgreSQL / MongoDB', 'Redis Caching', 'Docker Swarm'],
-      features: ['Giao diện tương thích mọi màn hình di động/máy tính', 'Thiết kế cơ sở dữ liệu đa khách thuê (Multi-tenant)', 'Tài liệu hướng dẫn kết nối API tiêu chuẩn', 'Đồng bộ dữ liệu thời gian thực qua Websocket'],
+      features: ['Giao diện tương thích mọi màn hình di động/máy tính', 'Thiết kế cơ sở dữ liệu đa khách thuê (Multi-tenant)', 'Tài liệu hướng dẫn kết nối API tiêu chuẩn'],
       price: 4500
     },
     {
@@ -122,7 +122,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Cấu hình liên kết định tuyến đa chi nhánh, tối ưu hóa đường truyền Internet và thiết lập mạng riêng VPN bảo mật.',
       fullDesc: 'Giải pháp SD-WAN giúp doanh nghiệp gộp và tối ưu băng thông của nhiều đường truyền Internet khác nhau. Tự động chuyển đổi dự phòng khi có đường truyền lỗi và mã hóa toàn bộ lưu lượng dữ liệu đi lại giữa các văn phòng chi nhánh.',
       technologies: ['Fortinet SD-WAN Orchestrator', 'Cisco Routers', 'Định tuyến động OSPF/BGP', 'IPSec VPN Tunneling'],
-      features: ['Thiết lập VPN site-to-site bảo mật', 'Chính sách QoS ưu tiên cuộc gọi VoIP và họp trực tuyến', 'Tự động failover chuyển kênh dự phòng', 'Phân tích băng thông chi tiết từng chi nhánh'],
+      features: ['Thiết lập VPN site-to-site bảo mật', 'Chính sách QoS ưu tiên cuộc gọi VoIP', 'Tự động failover chuyển kênh dự phòng'],
       price: 1800
     },
     {
@@ -132,7 +132,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Khảo sát vùng sóng, thi công đi dây cáp mạng chuẩn Cat6 và lắp đặt thiết bị phát sóng chuyên dụng hỗ trợ hàng trăm user.',
       fullDesc: 'Thiết lập vùng phủ sóng Wi-Fi liền mạch (Seamless Roaming) giúp người dùng di chuyển trong văn phòng không bị ngắt kết nối. Đi cáp mạng gọn gàng vào tủ Rack mạng trung tâm (MDF/IDF) tiêu chuẩn kỹ thuật.',
       technologies: ['UniFi Controller', 'Cisco Access Points', 'Cáp Cat6 AMP Commscope', 'Tủ Rack & Switch PoE'],
-      features: ['Phủ sóng liền mạch seamless roaming', 'Phân tích mạng Wi-Fi khách hàng và nội bộ', 'Khảo sát đo đạc sóng RF chuyên sâu', 'Dán nhãn hệ thống cáp chuẩn sơ đồ kỹ thuật'],
+      features: ['Phủ sóng liền mạch seamless roaming', 'Phân tích mạng Wi-Fi khách hàng và nội bộ', 'Khảo sát đo đạc sóng RF chuyên sâu'],
       price: 2500
     },
     {
@@ -142,7 +142,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Thiết lập camera giám sát độ nét cao, lưu trữ cloud/NAS bảo mật và giải pháp đàm thoại nội bộ chuyên nghiệp.',
       fullDesc: 'Giải pháp giám sát an ninh toàn diện tích hợp lưu trữ thông minh giúp phát hiện chuyển động lạ. Tổng đài VoIP giúp nhân viên đàm thoại nội bộ miễn phí giữa các văn phòng chi nhánh và quản trị dễ dàng qua giao diện web.',
       technologies: ['Hikvision / Dahua IP Cameras', 'Lưu trữ NAS Synology', 'Tổng đài Asterisk / Grandstream', 'Thiết bị điện thoại IP Phone'],
-      features: ['Lưu trữ ghi hình camera tối thiểu 30 ngày', 'Phát hiện chuyển động thông minh bảo vệ điện thoại', 'Cấu hình lời chào tự động tổng đài IVR', 'Đàm thoại miễn phí giữa các chi nhánh liên tỉnh'],
+      features: ['Lưu trữ ghi hình camera tối thiểu 30 ngày', 'Phát hiện chuyển động thông minh', 'Cấu hình lời chào tự động tổng đài IVR'],
       price: 1500
     },
     {
@@ -152,7 +152,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Thiết kế, cài đặt, sao lưu tự động và tối ưu hóa hiệu năng các hệ thống cơ sở dữ liệu lớn.',
       fullDesc: 'Chúng tôi cấu hình cụm cơ sở dữ liệu có độ tin cậy cao, phân tích đọc/ghi, lập chỉ mục tối ưu, sao lưu tự động hàng ngày lên S3/Cloud và khôi phục nhanh khi có sự cố.',
       technologies: ['PostgreSQL Replication', 'MongoDB Sharding', 'Redis Sentinel', 'PgBouncer', 'AWS RDS'],
-      features: ['Cài đặt cụm cơ sở dữ liệu tự động failover', 'Tối ưu hóa chỉ mục & Giảm tải nghẽn truy vấn', 'Lập lịch sao lưu mã hóa tự động hàng ngày', 'Giám sát tài nguyên CPU/IOPS cơ sở dữ liệu 24/7'],
+      features: ['Cài đặt cụm cơ sở dữ liệu tự động failover', 'Tối ưu hóa chỉ mục & Giảm tải nghẽn truy vấn', 'Lập lịch sao lưu dữ liệu tự động'],
       price: 3000
     },
     {
@@ -162,7 +162,7 @@ export const ServicesPage: React.FC = () => {
       shortDesc: 'Giám sát hạ tầng thời gian thực, cảnh báo sự cố chủ động qua Telegram/Slack và điều phối kỹ thuật.',
       fullDesc: 'Dịch vụ MSP trọn gói giúp doanh nghiệp vận hành hệ thống an toàn. Chúng tôi thiết lập thu thập log, cảnh báo tự động khi CPU/RAM quá tải, và kỹ sư trực hỗ trợ xử lý sự cố ngay lập tức.',
       technologies: ['Prometheus & Grafana', 'ELK Stack', 'Zabbix', 'PagerDuty', 'Telegram Alert Bot'],
-      features: ['Cảnh báo sự cố tức thời dưới 1 phút', 'Báo cáo hiệu năng và băng thông hàng tuần', 'Bảo trì định kỳ hệ điều hành và cập nhật bảo mật', 'Kỹ thuật viên túc trực hỗ trợ khẩn cấp 24/7'],
+      features: ['Cảnh báo sự cố tức thời dưới 1 phút', 'Báo cáo hiệu năng và băng thông hàng tuần', 'Bảo trì định kỳ hệ điều hành và cập nhật bảo mật'],
       price: 2000
     }
   ];
@@ -174,8 +174,9 @@ export const ServicesPage: React.FC = () => {
       brand: 'Fortinet',
       price: 1250,
       description: 'Thiết bị tường lửa bảo mật thế hệ mới (NGFW) bảo vệ mạng doanh nghiệp vừa và nhỏ, kiểm soát ứng dụng chuyên sâu và chống xâm nhập.',
-      image: 'https://images.unsplash.com/photo-1544256718-3bcf237f3974?q=80&w=400&auto=format&fit=crop',
-      specs: ['Chống virus & Phần mềm độc hại', 'VPN IPSec mã hóa tốc độ cao', 'Kiểm soát nội dung Web & Ứng dụng']
+      image: 'https://viettuans.vn/uploads/2022/11/fg-60f.jpg',
+      specs: ['Chống virus & Phần mềm độc hại', 'VPN IPSec tốc độ 6.5 Gbps', 'Kiểm soát nội dung Web & Ứng dụng'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-2',
@@ -184,7 +185,8 @@ export const ServicesPage: React.FC = () => {
       price: 220,
       description: 'Thiết bị phát sóng Wi-Fi băng tần kép ốp trần chịu tải lớn, hỗ trợ roaming không dây mượt mà cho hơn 200 người dùng đồng thời.',
       image: 'https://images.unsplash.com/photo-1551703599-6b3dbb57b235?q=80&w=400&auto=format&fit=crop',
-      specs: ['Tốc độ tối đa 1750 Mbps', 'Roaming liền mạch không ngắt kết nối', 'Quản trị tập trung qua Controller']
+      specs: ['Tốc độ tối đa 1750 Mbps', 'Roaming liền mạch không ngắt kết nối', 'Quản trị tập trung qua Controller'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-3',
@@ -193,7 +195,8 @@ export const ServicesPage: React.FC = () => {
       price: 850,
       description: 'Switch Layer 3 chuyên nghiệp với 24 cổng mạng tốc độ Gigabit cấp nguồn PoE+ hỗ trợ hoàn hảo cho hệ thống Camera IP và Access Point.',
       image: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=400&auto=format&fit=crop',
-      specs: ['24 cổng Gigabit PoE+ (195W)', '4 cổng SFP 1G Uplink', 'Quản lý nâng cao VLAN & QoS']
+      specs: ['24 cổng Gigabit PoE+ (195W)', '4 cổng SFP 1G Uplink', 'Quản lý nâng cao VLAN & QoS'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-4',
@@ -202,7 +205,8 @@ export const ServicesPage: React.FC = () => {
       price: 320,
       description: 'Router chịu tải cực mạnh cho văn phòng doanh nghiệp lớn, hỗ trợ cân bằng tải (Load Balancing) đa đường truyền WAN và định tuyến động.',
       image: 'https://images.unsplash.com/photo-1597852074816-d933c7d2b988?q=80&w=400&auto=format&fit=crop',
-      specs: ['Cổng mạng 2.5G & SFP+ 10G', 'Chịu tải lên đến 500+ session', 'Hệ điều hành RouterOS chuyên sâu']
+      specs: ['Cổng mạng 2.5G & SFP+ 10G', 'Chịu tải lên đến 500+ session', 'Hệ điều hành RouterOS chuyên sâu'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-5',
@@ -211,7 +215,8 @@ export const ServicesPage: React.FC = () => {
       price: 720,
       description: 'Thiết bị ổ cứng lưu trữ mạng 4 khay, giải pháp sao lưu (Backup) dữ liệu văn phòng tự động, chia sẻ file an toàn và đồng bộ hóa đám mây.',
       image: 'https://images.unsplash.com/photo-1601524589470-f7ecf50d3736?q=80&w=400&auto=format&fit=crop',
-      specs: ['4 khay ổ cứng (Hỗ trợ nâng lên 9 khay)', 'Hệ điều hành DSM trực quan', 'Tích hợp backup đa nền tảng']
+      specs: ['4 khay ổ cứng (Hỗ trợ tối đa 9 khay)', 'Hệ điều hành DSM trực quan', 'Tích hợp backup đa nền tảng'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-6',
@@ -220,7 +225,8 @@ export const ServicesPage: React.FC = () => {
       price: 820,
       description: 'Giải pháp bảo mật mạng tối ưu cho các văn phòng chi nhánh nhỏ hoặc cửa hàng bán lẻ, hỗ trợ SD-WAN và tường lửa kiểm soát ứng dụng.',
       image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=400&auto=format&fit=crop',
-      specs: ['Tích hợp bảo mật FortiGuard UTP', 'Hỗ trợ SD-WAN tối ưu hóa WAN', 'Quản lý tập trung qua Cloud']
+      specs: ['Tích hợp bảo mật FortiGuard UTP', 'Hỗ trợ SD-WAN tối ưu hóa WAN', 'Quản lý tập trung qua Cloud'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-7',
@@ -228,8 +234,9 @@ export const ServicesPage: React.FC = () => {
       brand: 'Ubiquiti',
       price: 290,
       description: 'Access Point Wi-Fi 6 thế hệ mới hiệu năng cao, băng tần kép chịu tải cực lớn thích hợp cho môi trường văn phòng mật độ cao.',
-      image: 'https://images.unsplash.com/photo-1544256718-3bcf237f3974?q=80&w=400&auto=format&fit=crop',
-      specs: ['Chuẩn Wi-Fi 6 tốc độ đến 5.3 Gbps', 'Hỗ trợ hơn 350+ thiết bị kết nối', 'Hỗ trợ cấp nguồn PoE tiện lợi']
+      image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=400&auto=format&fit=crop',
+      specs: ['Chuẩn Wi-Fi 6 tốc độ đến 5.3 Gbps', 'Hỗ trợ hơn 350+ thiết bị kết nối', 'Hỗ trợ cấp nguồn PoE tiện lợi'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-8',
@@ -237,8 +244,9 @@ export const ServicesPage: React.FC = () => {
       brand: 'Aruba',
       price: 460,
       description: 'Switch Gigabit quản trị thông minh (Smart Managed) với 24 cổng mạng tốc độ cao và 4 cổng SFP/SFP+ 10G uplink truyền dẫn dữ liệu cực nhanh.',
-      image: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=400&auto=format&fit=crop',
-      specs: ['24 cổng mạng Gigabit Ethernet', '4 cổng SFP+ 10G Uplink', 'Quản trị dễ dàng qua Aruba Instant On App']
+      image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=400&auto=format&fit=crop',
+      specs: ['24 cổng mạng Gigabit Ethernet', '4 cổng SFP+ 10G Uplink', 'Quản trị dễ dàng qua Aruba Instant On App'],
+      category: 'DEVICE'
     },
     {
       id: 'prod-9',
@@ -246,30 +254,124 @@ export const ServicesPage: React.FC = () => {
       brand: 'Synology',
       price: 420,
       description: 'Giải pháp lưu trữ và sao lưu dữ liệu cá nhân/văn phòng nhỏ gọn 2 khay ổ cứng, hỗ trợ phân quyền truy cập và đồng bộ hóa đám mây.',
-      image: 'https://images.unsplash.com/photo-1601524589470-f7ecf50d3736?q=80&w=400&auto=format&fit=crop',
-      specs: ['2 khay ổ cứng (Tối đa 36 TB)', 'Bộ vi xử lý Intel Celeron mạnh mẽ', 'Tích hợp ứng dụng Synology Drive']
+      image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=400&auto=format&fit=crop',
+      specs: ['2 khay ổ cứng (Tối đa 36 TB)', 'Bộ vi xử lý Intel Celeron mạnh mẽ', 'Tích hợp ứng dụng Synology Drive'],
+      category: 'DEVICE'
+    },
+    {
+      id: 'prod-10',
+      name: 'Cuộn Cáp mạng CommScope AMP Cat6 UTP 305m',
+      brand: 'CommScope',
+      price: 145,
+      description: 'Cáp mạng Cat6 UTP chính hãng CommScope lõi đồng nguyên chất truyền dẫn Gigabit ổn định, chuyên dụng đi dây văn phòng và dự án.',
+      image: 'https://images.unsplash.com/photo-1600132806370-bf17e65e942f?q=80&w=400&auto=format&fit=crop',
+      specs: ['Chiều dài tiêu chuẩn 305 mét', 'Băng thông đạt chuẩn 250 MHz', 'Độ dày lõi 23 AWG đồng nguyên chất'],
+      category: 'CABLE'
+    },
+    {
+      id: 'prod-11',
+      name: 'Hộp 100 đầu bấm mạng RJ45 CommScope Cat6 bọc kim',
+      brand: 'CommScope',
+      price: 48,
+      description: 'Đầu bấm mạng RJ45 Cat6 bọc kim loại chống nhiễu cao cấp, chân tiếp điểm mạ vàng chống oxy hóa tăng hiệu suất kết nối.',
+      image: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=400&auto=format&fit=crop',
+      specs: ['Hộp 100 hạt mạng RJ45', 'Thiết kế sắt bọc kim chống nhiễu', 'Phù hợp cáp Cat6 và Cat6A'],
+      category: 'CABLE'
+    },
+    {
+      id: 'prod-12',
+      name: 'Cuộn Cáp mạng Cat6A SFTP Golden Link chống nhiễu 305m',
+      brand: 'Golden Link',
+      price: 185,
+      description: 'Cáp mạng SFTP Cat6A chống nhiễu kép (lưới nhôm + lá bạc), lõi đồng pha hợp kim cao cấp đạt chuẩn truyền dữ liệu 10Gbps.',
+      image: 'https://images.unsplash.com/photo-1618424181497-157f25b6ddd5?q=80&w=400&auto=format&fit=crop',
+      specs: ['Lớp chống nhiễu kép SFTP', 'Băng thông tối đa 500 MHz', 'Phù hợp chạy ngoài trời và âm tường'],
+      category: 'CABLE'
+    },
+    {
+      id: 'prod-13',
+      name: 'Hộp 100 đầu bấm mạng RJ45 AMP Cat5e nhựa dẻo',
+      brand: 'AMP / CommScope',
+      price: 22,
+      description: 'Hạt mạng RJ45 Cat5e chất lượng cao, nhựa dẻo dai chống gãy lẫy khi cắm rút nhiều lần, tiếp điểm lá đồng dẫn điện tốt.',
+      image: 'https://images.unsplash.com/photo-1551808525-51a94da548ce?q=80&w=400&auto=format&fit=crop',
+      specs: ['Hộp 100 hạt mạng Cat5e', 'Nhựa dẻo chịu lực đàn hồi', 'Tiếp điểm lá đồng nguyên chất'],
+      category: 'CABLE'
+    },
+    {
+      id: 'prod-14',
+      name: 'Thanh quản lý Cáp Patch Panel 24-Port Cat6 CommScope',
+      brand: 'CommScope',
+      price: 85,
+      description: 'Thanh Patch Panel 24 cổng RJ45 chuẩn rack 19 inch giúp gom gọn và quản lý sơ đồ đấu nối cáp mạng tập trung trong tủ Rack.',
+      image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=200&auto=format&fit=crop',
+      specs: ['Độ cao tiêu chuẩn 1U Rackmount', 'Gồm 24 cổng Cat6 RJ45', 'Nhãn đấu nối số thứ tự rõ ràng'],
+      category: 'ACCESSORY'
+    },
+    {
+      id: 'prod-15',
+      name: 'Vòng cao su đánh dấu số dây mạng từ 0-9 Cat6',
+      brand: 'OEM',
+      price: 6,
+      description: 'Bộ vòng đánh số cao su từ 0 đến 9 nhiều màu sắc phân biệt giúp định danh các đường dây mạng trong phòng máy Server dễ dàng.',
+      image: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=200&auto=format&fit=crop',
+      specs: ['Gồm 10 cuộn đánh số 0-9', 'Màu sắc phân biệt tiêu chuẩn', 'Dùng chung cáp Cat5e và Cat6'],
+      category: 'ACCESSORY'
+    },
+    {
+      id: 'prod-16',
+      name: 'Kìm bấm mạng đa năng CommScope Pro-Crimper',
+      brand: 'CommScope',
+      price: 95,
+      description: 'Kìm chuyên dụng cho kỹ thuật viên mạng, tích hợp bấm đầu RJ45/RJ11, tuốt vỏ cáp mạng và cắt dây gọn gàng, trợ lực bấm nhẹ nhàng.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=400&auto=format&fit=crop',
+      specs: ['Chất liệu thép cacbon siêu bền', 'Bấm RJ45 Cat5e/Cat6 và RJ11', 'Tay cầm bọc cao su chống mỏi'],
+      category: 'ACCESSORY'
+    },
+    {
+      id: 'prod-17',
+      name: 'Tủ Rack Mạng Treo Tường 9U D500 cửa lưới',
+      brand: 'VietRack',
+      price: 115,
+      description: 'Tủ đựng thiết bị mạng 9U sâu 500mm treo tường chắc chắn, cửa lưới thông thoáng khí, sơn tĩnh điện đen chống han gỉ.',
+      image: 'https://images.unsplash.com/photo-1597852074816-d933c7d2b988?q=80&w=200&auto=format&fit=crop',
+      specs: ['Kích thước H480 x W550 x D500', 'Mặt trước cửa lưới sắt tổ ong', 'Tích hợp quạt tản nhiệt & nguồn 6 port'],
+      category: 'ACCESSORY'
+    },
+    {
+      id: 'prod-18',
+      name: 'Dây nhảy cáp mạng đúc sẵn Patch Cord Cat6 CommScope 3m',
+      brand: 'CommScope',
+      price: 9,
+      description: 'Dây cáp mạng nhảy đúc sẵn hai đầu RJ45 Cat6 chất lượng cao dài 3m màu xanh dương, lõi đồng nguyên chất kết nối ổn định.',
+      image: 'https://images.unsplash.com/photo-1618424181497-157f25b6ddd5?q=80&w=200&auto=format&fit=crop',
+      specs: ['Độ dài dây 3 mét', 'Hai đầu đúc nhựa bảo vệ đầu bấm', 'Chuẩn cáp Cat6 đồng nguyên chất'],
+      category: 'CABLE'
+    },
+    {
+      id: 'prod-19',
+      name: 'Bộ phát Wi-Fi 6 Aruba Instant On AP22 Cloud Managed',
+      brand: 'Aruba',
+      price: 195,
+      description: 'Thiết bị phát sóng Wi-Fi 6 chuyên dụng chịu tải hơn 75 user hoạt động đồng thời, cấu hình qua Cloud và App di động miễn phí.',
+      image: 'https://images.unsplash.com/photo-1551703599-6b3dbb57b235?q=80&w=200&auto=format&fit=crop',
+      specs: ['Chuẩn Wi-Fi 6 tốc độ 1.7 Gbps', 'Hỗ trợ Mesh mạng không dây', 'Tích hợp bảo mật WPA2/WPA3 tối tân'],
+      category: 'DEVICE'
+    },
+    {
+      id: 'prod-20',
+      name: 'Switch mạng PoE Ubiquiti UniFi USW-24-POE Smart Managed',
+      brand: 'Ubiquiti',
+      price: 495,
+      description: 'Switch POE quản trị 24 cổng Gigabit, cấp nguồn POE+ tổng công suất 95W tương thích tốt với camera IP và AP Wifi UniFi.',
+      image: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=200&auto=format&fit=crop',
+      specs: ['16 cổng PoE+ Gigabit & 8 cổng Gigabit', '2 cổng SFP 1G Uplink', 'Quản trị UniFi Controller tập trung'],
+      category: 'DEVICE'
     }
   ];
 
-  // Pricing helper calculations
-  const getInfraPrice = (size: 'NONE' | 'SMALL' | 'MEDIUM' | 'LARGE') => {
-    switch (size) {
-      case 'SMALL': return 200;
-      case 'MEDIUM': return 800;
-      case 'LARGE': return 2500;
-      default: return 0;
-    }
-  };
-
-  const getMaintPrice = (lvl: 'NONE' | 'BASIC' | 'PREMIUM') => {
-    switch (lvl) {
-      case 'BASIC': return 500;
-      case 'PREMIUM': return 1500;
-      default: return 0;
-    }
-  };
-
-  const monthlyTotal = getInfraPrice(infraSize) + getMaintPrice(maintenance) + (devHours * 100) + (securitySuite ? 450 : 0);
+  // Pricing helper calculations (Required for backward compatibility/Redux, but hidden in UI)
+  const monthlyTotal = 0;
 
   // Quote Request for Services
   const handleServiceQuote = (srv: ServiceItem) => {
@@ -304,22 +406,15 @@ export const ServicesPage: React.FC = () => {
     setTimeout(() => setProductOrderCreatedId(null), 4000);
   };
 
-  // Custom Quote Generation from Calculator
-  const handleGenerateQuote = () => {
-    if (!isAuthenticated) {
-      navigate(PATHS.LOGIN);
-      return;
-    }
-    const details = `Dự toán dịch vụ tự chọn:\n- Quy mô Cloud: ${infraSize} ($${getInfraPrice(infraSize)}/tháng)\n- Mức độ bảo trì SLA: ${maintenance} ($${getMaintPrice(maintenance)}/tháng)\n- Giờ phát triển bổ sung: ${devHours} giờ ($${devHours * 100}/tháng)\n- Gói bảo mật nâng cao: ${securitySuite ? 'Đã đăng ký' : 'Không đăng ký'} (${securitySuite ? '+$450' : '$0'})`;
-    dispatch(addQuotation({
-      title: 'Yêu cầu Báo giá Dự án Tùy chỉnh (Tự tính toán)',
-      cost: monthlyTotal,
-      details,
-      clientId: user?.id
-    }));
-    setQuoteCreated(true);
-    setTimeout(() => setQuoteCreated(false), 4000);
-  };
+  // Filtered products list based on search and category
+  const filteredProducts = products.filter(prod => {
+    const matchesCategory = selectedCategory === 'ALL' || prod.category === selectedCategory;
+    const matchesSearch =
+      prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prod.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prod.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
@@ -327,17 +422,17 @@ export const ServicesPage: React.FC = () => {
       {/* Unified Page Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight font-sans">
-          Dịch vụ Kỹ thuật &{' '}
+          Giải pháp Dịch vụ &{' '}
           <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-enterprise-accent-cyan bg-clip-text text-transparent">
-            Thiết bị Chuyên dụng
+            Thiết bị Mạng chuyên dụng
           </span>
         </h1>
         <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed">
-          Chúng tôi cung cấp giải pháp đám mây, bảo mật Zero Trust, DevSecOps cùng danh mục thiết bị mạng chính hãng và công cụ tự tính toán báo giá tối ưu.
+          Chúng tôi cung cấp các gói dịch vụ đám mây, bảo mật Zero Trust cùng danh mục thiết bị mạng, cáp phụ kiện chính hãng phục vụ xây dựng hạ tầng CNTT toàn diện.
         </p>
       </div>
 
-      {/* Unified Tab Switcher */}
+      {/* Unified Tab Switcher (Removed Budget Calculator) */}
       <div className="flex justify-center">
         <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/50 dark:border-slate-800/40 shadow-inner">
           <button
@@ -351,7 +446,7 @@ export const ServicesPage: React.FC = () => {
             <Server className="h-4 w-4" />
             <span>Danh mục Dịch vụ</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('HARDWARE')}
             className={`px-4 sm:px-6 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center space-x-2 ${
@@ -361,19 +456,7 @@ export const ServicesPage: React.FC = () => {
             }`}
           >
             <ShoppingCart className="h-4 w-4" />
-            <span>Thiết bị Mạng</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('CALCULATOR')}
-            className={`px-4 sm:px-6 py-2.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center space-x-2 ${
-              activeTab === 'CALCULATOR'
-                ? 'bg-white dark:bg-slate-950 text-brand-500 shadow-sm border border-slate-200/20'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <Calculator className="h-4 w-4" />
-            <span>Tự Tính Báo giá</span>
+            <span>Sản phẩm & Thiết bị</span>
           </button>
         </div>
       </div>
@@ -427,7 +510,7 @@ export const ServicesPage: React.FC = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="space-y-4 pt-3.5 border-t border-slate-105/40 dark:border-slate-800/40 overflow-hidden"
+                        className="space-y-4 pt-3.5 border-t border-slate-150/40 dark:border-slate-800/40 overflow-hidden"
                       >
                         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-350 leading-relaxed">
                           {srv.fullDesc}
@@ -473,7 +556,7 @@ export const ServicesPage: React.FC = () => {
                   </div>
 
                   {srvQuoteCreatedId === srv.id ? (
-                    <div className="px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-455 rounded-xl text-xs font-bold flex items-center justify-center space-x-1 shrink-0">
+                    <div className="px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-450 rounded-xl text-xs font-bold flex items-center justify-center space-x-1 shrink-0">
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0 animate-bounce" />
                       <span>Đã yêu cầu!</span>
                     </div>
@@ -493,257 +576,179 @@ export const ServicesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 2: Hardware grid */}
+      {/* Tab 2: Hardware grid (Standard Online Shop layout with 20 items, Search, and Category Filtering) */}
       {activeTab === 'HARDWARE' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
-          {products.map((prod) => {
-            return (
-              <div
-                key={prod.id}
-                className="glass-panel glass-panel-hover rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-300"
-              >
-                <div className="relative h-48 w-full overflow-hidden">
-                  <img
-                    src={prod.image}
-                    alt={prod.name}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                  <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-slate-750">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">{prod.brand}</span>
-                  </div>
-                </div>
-
-                <div className="p-8 space-y-4 flex-1 text-left">
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
-                      {prod.name}
-                    </h3>
-                    <p className="text-xs text-slate-550 dark:text-slate-455 leading-relaxed line-clamp-2">
-                      {prod.description}
-                    </p>
-                  </div>
-
-                  {/* Specs checklist */}
-                  <div className="space-y-2 pt-2">
-                    <h4 className="text-[9px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Thông số nổi bật</h4>
-                    <ul className="space-y-1.5 text-xs text-slate-550 dark:text-slate-405">
-                      {prod.specs.map((spec, i) => (
-                        <li key={i} className="flex items-center space-x-2">
-                          <span className="h-1.5 w-1.5 bg-brand-500 rounded-full shrink-0" />
-                          <span className="text-[11px] leading-snug">{spec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Quantity Selector */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/40">
-                    <span className="text-[10px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider">Số lượng đặt mua</span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setQuantities({ ...quantities, [prod.id]: Math.max(1, (quantities[prod.id] || 1) - 1) })}
-                        className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-550 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="text-xs font-bold font-mono text-slate-900 dark:text-white w-5 text-center">
-                        {quantities[prod.id] || 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantities({ ...quantities, [prod.id]: Math.min(99, (quantities[prod.id] || 1) + 1) })}
-                        className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-550 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer price & buy action */}
-                <div className="p-8 bg-slate-50/50 dark:bg-slate-950/10 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between gap-4 mt-auto">
-                  <div className="flex flex-col text-left">
-                    <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">
-                      {(quantities[prod.id] || 1) > 1 ? `Giá (${quantities[prod.id] || 1} cái)` : 'Giá thiết bị'}
-                    </span>
-                    <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono flex items-center">
-                      <DollarSign className="h-4 w-4 text-brand-500" />
-                      <span>{(prod.price * (quantities[prod.id] || 1)).toLocaleString()}</span>
-                    </span>
-                  </div>
-
-                  {productOrderCreatedId === prod.id ? (
-                    <div className="px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-455 rounded-xl text-xs font-bold flex items-center justify-center space-x-1 shrink-0">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 animate-bounce" />
-                      <span>Đặt thành công (SL: {quantities[prod.id] || 1})!</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleHardwareOrder(prod)}
-                      className="px-3.5 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl text-[11px] shadow-sm transition-colors cursor-pointer flex items-center space-x-1 shrink-0"
-                    >
-                      <ShoppingCart className="h-3.5 w-3.5" />
-                      <span>{isAuthenticated ? 'Đặt hàng ngay' : 'Đăng nhập'}</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Tab 3: Budget Calculator */}
-      {activeTab === 'CALCULATOR' && (
-        <div className="max-w-2xl mx-auto">
-          <div className="glass-panel rounded-3xl p-8 sm:p-10 space-y-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 h-32 w-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute inset-0 bg-dot-pattern opacity-[0.04] pointer-events-none" />
-            
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center border-b border-slate-100 dark:border-slate-800/80 pb-4 text-left relative z-10">
-              <Calculator className="h-5 w-5 text-brand-500 mr-2" />
-              <span>Dự toán Chi phí Dự án Tùy chỉnh</span>
-            </h2>
-
-            {/* Cloud Infrastructure Selector */}
-            <div className="space-y-2.5 text-left relative z-10">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 dark:text-slate-400">
-                Ngân sách vận hành Cloud hàng tháng
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {(['NONE', 'SMALL', 'MEDIUM', 'LARGE'] as const).map(size => (
+        <div className="space-y-8">
+          
+          {/* Filter Toolbar & Search */}
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 p-4 rounded-2xl shadow-sm">
+            {/* Category Buttons */}
+            <div className="flex flex-wrap gap-2 justify-center md:justify-start w-full md:w-auto">
+              {[
+                { id: 'ALL', label: 'Tất cả sản phẩm', icon: Grid },
+                { id: 'DEVICE', label: 'Thiết bị mạng', icon: Server },
+                { id: 'CABLE', label: 'Cáp & Đầu bấm', icon: Network },
+                { id: 'ACCESSORY', label: 'Phụ kiện tủ rack', icon: Tag }
+              ].map(cat => {
+                const Icon = cat.icon;
+                const isSelected = selectedCategory === cat.id;
+                return (
                   <button
-                    key={size}
-                    onClick={() => setInfraSize(size)}
-                    className={`py-2 px-1 text-center rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                      infraSize === size
-                        ? 'border-brand-500 bg-brand-500/5 text-brand-600 dark:text-brand-400'
-                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id as any)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? 'bg-brand-500 text-white shadow-sm scale-102 border border-brand-600'
+                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400 border border-transparent'
                     }`}
                   >
-                    <div className="font-bold">
-                      {size === 'NONE' && 'Không'}
-                      {size === 'SMALL' && 'Nhỏ'}
-                      {size === 'MEDIUM' && 'Vừa'}
-                      {size === 'LARGE' && 'Lớn'}
-                    </div>
-                    <div className="text-[9px] text-slate-450 mt-0.5 font-mono">
-                      {size === 'NONE' && '$0'}
-                      {size === 'SMALL' && '$200'}
-                      {size === 'MEDIUM' && '$800'}
-                      {size === 'LARGE' && '$2.5k'}
-                    </div>
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{cat.label}</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
 
-            {/* Maintenance Support Level */}
-            <div className="space-y-2.5 text-left relative z-10">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 dark:text-slate-400">
-                Mức độ cam kết hỗ trợ kỹ thuật SLA
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['NONE', 'BASIC', 'PREMIUM'] as const).map(lvl => (
-                  <button
-                    key={lvl}
-                    onClick={() => setMaintenance(lvl)}
-                    className={`py-2 px-1 text-center rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                      maintenance === lvl
-                        ? 'border-brand-500 bg-brand-500/5 text-brand-600 dark:text-brand-400'
-                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
-                    }`}
-                  >
-                    <div className="font-bold">
-                      {lvl === 'NONE' && 'Không'}
-                      {lvl === 'BASIC' && 'Cơ bản (8x5)'}
-                      {lvl === 'PREMIUM' && 'Cao cấp (24x7)'}
-                    </div>
-                    <div className="text-[9px] text-slate-450 mt-0.5 font-mono">
-                      {lvl === 'NONE' && '$0'}
-                      {lvl === 'BASIC' && '$500'}
-                      {lvl === 'PREMIUM' && '$1.5k'}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom dev hours slider */}
-            <div className="space-y-2.5 text-left relative z-10">
-              <div className="flex justify-between items-center">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-555 dark:text-slate-400">
-                  Số giờ hỗ trợ phát triển (Dev)
-                </label>
-                <span className="text-xs font-bold font-mono text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-full">
-                  {devHours} giờ/tháng
-                </span>
-              </div>
+            {/* Live Search input */}
+            <div className="relative w-full md:w-80">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Search className="h-4 w-4" />
+              </span>
               <input
-                type="range"
-                min="0"
-                max="80"
-                step="5"
-                value={devHours}
-                onChange={(e) => setDevHours(parseInt(e.target.value))}
-                className="w-full h-1 bg-slate-200 dark:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm sản phẩm, hãng sản xuất..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500 shadow-inner"
               />
-              <div className="flex justify-between text-[9px] text-slate-450 font-semibold font-mono">
-                <span>0 giờ</span>
-                <span>40 giờ</span>
-                <span>80 giờ ($8k)</span>
-              </div>
-            </div>
-
-            {/* Security Suite checkbox */}
-            <div className="flex items-center justify-between p-3.5 border border-slate-200/50 dark:border-slate-800/80 rounded-xl bg-slate-50/50 dark:bg-slate-900/10 relative z-10">
-              <div className="flex items-start space-x-2.5">
-                <input
-                  type="checkbox"
-                  id="security"
-                  checked={securitySuite}
-                  onChange={(e) => setSecuritySuite(e.target.checked)}
-                  className="mt-1 h-4.5 w-4.5 text-brand-600 border-slate-350 dark:border-slate-800 rounded focus:ring-brand-500 cursor-pointer"
-                />
-                <label htmlFor="security" className="select-none cursor-pointer text-left">
-                  <span className="block text-xs font-bold text-slate-900 dark:text-white leading-none">Bổ sung Gói Bảo mật Cao cấp</span>
-                  <span className="block text-[10px] text-slate-500 mt-1">Hệ thống WAF và kiểm toán an ninh bảo mật hàng tuần</span>
-                </label>
-              </div>
-              <span className="text-xs font-bold font-mono text-slate-700 dark:text-slate-300 shrink-0">+$450</span>
-            </div>
-
-            {/* Calculated output */}
-            <div className="border-t border-slate-200 dark:border-slate-800 pt-6 space-y-4 relative z-10">
-              <div className="flex justify-between items-baseline text-left">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">Chi phí Ước tính:</span>
-                <span className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center font-mono">
-                  <DollarSign className="h-6 w-6 text-brand-500 shrink-0" />
-                  <span>{monthlyTotal.toLocaleString()}</span>
-                  <span className="text-xs text-slate-405 font-sans font-normal ml-1">/ tháng</span>
-                </span>
-              </div>
-
-              {quoteCreated ? (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-450 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 animate-bounce" />
-                  <span>Đã ghi nhận yêu cầu Báo giá nháp vào Portal!</span>
-                </div>
-              ) : (
-                <button
-                  onClick={handleGenerateQuote}
-                  className="w-full flex justify-center items-center py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg transition-colors cursor-pointer text-sm"
-                >
-                  <PlusCircle className="h-4.5 w-4.5 mr-2" />
-                  <span>{isAuthenticated ? 'Yêu cầu Báo giá trong Portal' : 'Đăng nhập để nhận Báo giá'}</span>
-                </button>
-              )}
-              <p className="text-[10px] text-slate-455 text-center font-medium leading-normal">
-                Báo giá trên mang tính chất ước lượng tham khảo dựa trên quy mô hạ tầng. Chi phí thực tế sẽ dựa trên hợp đồng thỏa thuận dịch vụ.
-              </p>
             </div>
           </div>
+
+          {/* Product Cards Grid */}
+          {filteredProducts.length === 0 ? (
+            <div className="glass-panel py-24 text-center rounded-2xl flex flex-col items-center justify-center space-y-3">
+              <div className="h-14 w-14 rounded-2xl bg-brand-500/10 flex items-center justify-center">
+                <ShoppingCart className="h-7 w-7 text-brand-400 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Không tìm thấy thiết bị mạng nào</p>
+                <p className="text-xs text-slate-450 max-w-xs mx-auto">Vui lòng thử tìm kiếm với từ khóa khác hoặc chuyển danh mục lọc.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+              {filteredProducts.map((prod) => {
+                const qty = quantities[prod.id] || 1;
+                return (
+                  <div
+                    key={prod.id}
+                    className="glass-panel glass-panel-hover rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 border border-slate-200/60 dark:border-slate-800/60 relative group"
+                  >
+                    {/* Brand/Logo Float Badge */}
+                    <div className="absolute top-4 left-4 z-10 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700 shadow-sm">
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">{prod.brand}</span>
+                    </div>
+
+                    {/* Stock Status Badge */}
+                    <div className="absolute top-4 right-4 z-10 bg-emerald-500/90 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg">
+                      Còn hàng
+                    </div>
+
+                    {/* Image Area */}
+                    <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
+                      <img
+                        src={prod.image}
+                        alt={prod.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-106"
+                      />
+                    </div>
+
+                    {/* Details content */}
+                    <div className="p-6 space-y-4 flex-1 text-left flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-bold text-brand-500 uppercase tracking-wider">
+                          {prod.category === 'DEVICE' ? 'Thiết bị mạng' : prod.category === 'CABLE' ? 'Cáp & Đầu bấm' : 'Phụ kiện tủ rack'}
+                        </span>
+                        <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug line-clamp-2 group-hover:text-brand-500 transition-colors">
+                          {prod.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3">
+                          {prod.description}
+                        </p>
+                      </div>
+
+                      {/* Specs badges list */}
+                      <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/40">
+                        <h4 className="text-[9px] font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 bg-brand-500 rounded-full shrink-0" />
+                          <span>Thông số kỹ thuật</span>
+                        </h4>
+                        <div className="flex flex-col gap-1.5">
+                          {prod.specs.map((spec, i) => (
+                            <span key={i} className="text-[11px] text-slate-600 dark:text-slate-350 leading-tight block">
+                              • {spec}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Quantity Selector controls */}
+                      <div className="flex items-center justify-between pt-3.5 border-t border-slate-100 dark:border-slate-800/40 mt-auto">
+                        <span className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider">Số lượng đặt</span>
+                        <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-200/50 dark:border-slate-800/60">
+                          <button
+                            type="button"
+                            onClick={() => setQuantities({ ...quantities, [prod.id]: Math.max(1, qty - 1) })}
+                            className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-bold font-mono text-slate-900 dark:text-white w-6 text-center">
+                            {qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setQuantities({ ...quantities, [prod.id]: Math.min(99, qty + 1) })}
+                            className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer pricing & Buy Action button */}
+                    <div className="p-6 bg-slate-50/50 dark:bg-slate-950/10 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between gap-4 mt-auto">
+                      <div className="flex flex-col text-left">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">
+                          {qty > 1 ? `Tổng (${qty} cái)` : 'Đơn giá'}
+                        </span>
+                        <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono flex items-center">
+                          <DollarSign className="h-4 w-4 text-brand-500" />
+                          <span>{(prod.price * qty).toLocaleString()}</span>
+                        </span>
+                      </div>
+
+                      {productOrderCreatedId === prod.id ? (
+                        <div className="px-3.5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold flex items-center justify-center space-x-1 shrink-0">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 animate-bounce" />
+                          <span>Đặt hàng thành công!</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleHardwareOrder(prod)}
+                          className="px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl text-[11px] shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center space-x-1.5 shrink-0"
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          <span>{isAuthenticated ? 'Đặt hàng ngay' : 'Đăng nhập'}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
