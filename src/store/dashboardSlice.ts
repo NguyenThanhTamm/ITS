@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Project, Ticket, Quotation, Order, SystemNotification, ProjectStatus, OrderStatus, TicketStatus, User, UserRole } from '@/types';
+import { Project, Ticket, Quotation, Order, SystemNotification, ProjectStatus, OrderStatus, TicketStatus, User, UserRole, Product } from '@/types';
 import { loadMockState, saveMockState } from '@/data/mock';
 
 interface DashboardState {
@@ -9,6 +9,7 @@ interface DashboardState {
   orders: Order[];
   notifications: SystemNotification[];
   users: User[];
+  products: Product[];
 }
 
 const saved = loadMockState();
@@ -20,6 +21,7 @@ const initialState: DashboardState = {
   orders: saved.orders,
   notifications: saved.notifications,
   users: saved.users || [],
+  products: saved.products || [],
 };
 
 const syncWithStorage = (state: DashboardState) => {
@@ -32,6 +34,7 @@ const syncWithStorage = (state: DashboardState) => {
     orders: state.orders,
     notifications: state.notifications,
     users: state.users,
+    products: state.products,
   });
 };
 
@@ -133,7 +136,7 @@ const dashboardSlice = createSlice({
           ],
           manager: {
             name: 'Nguyễn Thanh Tâm',
-            email: 'admin@tamnguyen.dev',
+            email: 'ngthanhtam.it@gmail.com',
             avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'
           },
           clientId: quote.clientId || 'u-client'
@@ -440,8 +443,8 @@ const dashboardSlice = createSlice({
       state.notifications = state.notifications.filter(n => n.id !== action.payload);
       syncWithStorage(state);
     },
-    updateUserProfile(state, action: PayloadAction<{ userId: string; name: string; email: string; company?: string; avatar?: string; password?: string }>) {
-      const { userId, name, email, company, avatar, password } = action.payload;
+    updateUserProfile(state, action: PayloadAction<{ userId: string; name: string; email: string; company?: string; avatar?: string; password?: string; phone?: string }>) {
+      const { userId, name, email, company, avatar, password, phone } = action.payload;
       const user = state.users.find(u => u.id === userId);
       if (user) {
         user.name = name;
@@ -449,8 +452,32 @@ const dashboardSlice = createSlice({
         if (company !== undefined) user.company = company;
         if (avatar !== undefined) user.avatar = avatar;
         if (password !== undefined) user.password = password;
+        if (phone !== undefined) user.phone = phone;
         syncWithStorage(state);
       }
+    },
+    addProduct(state, action: PayloadAction<Product>) {
+      state.products.unshift(action.payload);
+      state.notifications.unshift({
+        id: `n-${Date.now()}`,
+        title: 'Thêm sản phẩm mới',
+        message: `Sản phẩm "${action.payload.name}" đã được thêm vào hệ thống thành công.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        type: 'INFO'
+      });
+      syncWithStorage(state);
+    },
+    updateProduct(state, action: PayloadAction<Product>) {
+      const idx = state.products.findIndex(p => p.id === action.payload.id);
+      if (idx !== -1) {
+        state.products[idx] = action.payload;
+        syncWithStorage(state);
+      }
+    },
+    deleteProduct(state, action: PayloadAction<string>) {
+      state.products = state.products.filter(p => p.id !== action.payload);
+      syncWithStorage(state);
     }
   }
 });
@@ -477,6 +504,9 @@ export const {
   markAllNotificationsRead,
   clearNotification,
   updateUserProfile,
+  addProduct,
+  updateProduct,
+  deleteProduct,
 } = dashboardSlice.actions;
 
 export default dashboardSlice.reducer;

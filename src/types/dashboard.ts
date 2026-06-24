@@ -112,3 +112,16 @@ export interface DashboardMetrics {
   completedProjects: number;
   resolvedTickets: number;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  description: string;
+  image: string;
+  specs: string[];
+  category: 'DEVICE' | 'CABLE' | 'ACCESSORY';
+  inStock: boolean;
+}
+

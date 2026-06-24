@@ -64,44 +64,35 @@ export const OverviewPage: React.FC = () => {
 
   const trafficData = generateTrafficData();
 
-  // Generate SLA velocity (resolved vs opened tickets) per week of June 2026 dynamically
-  const generateTicketData = () => {
-    const weeks = [
-      { name: 'Tuần 22', weekNum: 22 },
-      { name: 'Tuần 23', weekNum: 23 },
-      { name: 'Tuần 24', weekNum: 24 },
-      { name: 'Tuần 25', weekNum: 25 }
+  // Generate dynamic monthly revenue/spend data from orders and services (approved quotations)
+  const generateMonthlyRevenueData = () => {
+    const months = [
+      { name: 'Tháng 1', monthNum: '01' },
+      { name: 'Tháng 2', monthNum: '02' },
+      { name: 'Tháng 3', monthNum: '03' },
+      { name: 'Tháng 4', monthNum: '04' },
+      { name: 'Tháng 5', monthNum: '05' },
+      { name: 'Tháng 6', monthNum: '06' }
     ];
 
-    return weeks.map(w => {
-      let rangeStart = 1;
-      let rangeEnd = 7;
-      if (w.weekNum === 23) { rangeStart = 8; rangeEnd = 14; }
-      else if (w.weekNum === 24) { rangeStart = 15; rangeEnd = 21; }
-      else if (w.weekNum === 25) { rangeStart = 22; rangeEnd = 28; }
+    return months.map(m => {
+      // Hardware and SaaS Orders
+      const monthlyOrders = filteredOrders.filter(o => o.purchaseDate && o.purchaseDate.includes(`-${m.monthNum}-`));
+      const orderRevenue = monthlyOrders.reduce((sum, o) => sum + o.price, 0);
 
-      const ticketsInWeek = filteredTickets.filter(t => {
-        if (!t.createdAt) return false;
-        const day = parseInt(t.createdAt.substring(8, 10));
-        const month = parseInt(t.createdAt.substring(5, 7));
-        return month === 6 && day >= rangeStart && day <= rangeEnd;
-      });
-
-      const opened = ticketsInWeek.filter(t => t.status !== 'RESOLVED').length;
-      const resolved = ticketsInWeek.filter(t => t.status === 'RESOLVED').length;
-
-      const baseOpened = isClient ? 0 : 2;
-      const baseResolved = isClient ? 0 : 3;
+      // Professional Services (Approved Quotations)
+      const monthlyServices = filteredQuotations.filter(q => q.status === 'APPROVED' && q.createdAt && q.createdAt.includes(`-${m.monthNum}-`));
+      const serviceRevenue = monthlyServices.reduce((sum, q) => sum + q.total, 0);
 
       return {
-        week: w.name,
-        opened: baseOpened + opened,
-        resolved: baseResolved + resolved
+        name: m.name,
+        orders: orderRevenue,
+        services: serviceRevenue
       };
     });
   };
 
-  const ticketData = generateTicketData();
+  const monthlyRevenueData = generateMonthlyRevenueData();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -232,27 +223,53 @@ export const OverviewPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Small bar chart */}
+        {/* Monthly Revenue Bar chart */}
         <div className="lg:col-span-4 glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
           <div>
-            <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Thống kê Vận tốc xử lý SLA</h2>
-            <p className="text-[10px] sm:text-xs text-slate-455 font-medium">Tỷ lệ mở mới và đóng yêu cầu hỗ trợ.</p>
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+              {isClient ? 'Chi tiêu Đơn hàng & Dịch vụ' : 'Doanh số Đơn hàng & Dịch vụ'}
+            </h2>
+            <p className="text-[10px] sm:text-xs text-slate-450 font-medium">
+              {isClient ? 'So sánh chi tiêu mua sắm thiết bị và dịch vụ triển khai.' : 'So sánh doanh thu thiết bị phần cứng và dịch vụ kỹ thuật.'}
+            </p>
           </div>
 
           <div className="h-44 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ticketData}>
+              <BarChart data={monthlyRevenueData}>
+                <defs>
+                  <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.4} />
+                  </linearGradient>
+                  <linearGradient id="servicesGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#047857" stopOpacity={0.4} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.08)" />
-                <XAxis dataKey="week" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                <Tooltip />
-                <Bar dataKey="resolved" fill="#10b981" radius={[4, 4, 0, 0]} name="Đã giải quyết" />
-                <Bar dataKey="opened" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Đang mở" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} width={30} tickFormatter={(v) => `$${v}`} />
+                <Tooltip formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name]} />
+                <Bar dataKey="orders" fill="url(#ordersGradient)" radius={[4, 4, 0, 0]} name={isClient ? 'Mua thiết bị' : 'Thiết bị'} />
+                <Bar dataKey="services" fill="url(#servicesGradient)" radius={[4, 4, 0, 0]} name={isClient ? 'Dịch vụ triển khai' : 'Dịch vụ kỹ thuật'} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="text-[10px] sm:text-xs text-slate-400 font-medium bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-850">
-            Thời gian phản hồi sự cố trung bình tuần này là <strong className="text-slate-800 dark:text-white font-semibold">14 phút</strong>, đáp ứng cam kết hỗ trợ tối đa 30 phút đối với sự cố nghiêm trọng.
+          <div className="text-[10px] sm:text-xs text-slate-400 font-medium bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-850 space-y-1">
+            <div className="flex justify-between">
+              <span>{isClient ? 'Chi tiêu Thiết bị:' : 'Doanh thu Thiết bị:'}</span>
+              <strong className="text-blue-500 font-bold font-mono">${monthlyRevenueData.reduce((sum, d) => sum + d.orders, 0).toLocaleString()}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>{isClient ? 'Chi tiêu Dịch vụ:' : 'Doanh thu Dịch vụ:'}</span>
+              <strong className="text-emerald-500 font-bold font-mono">${monthlyRevenueData.reduce((sum, d) => sum + d.services, 0).toLocaleString()}</strong>
+            </div>
+            <div className="flex justify-between pt-1.5 border-t border-slate-200/55 dark:border-slate-800/50 font-bold text-slate-700 dark:text-slate-350">
+              <span>Tổng cộng tích lũy:</span>
+              <span className="text-brand-500 dark:text-brand-400 font-mono text-sm">${(monthlyRevenueData.reduce((sum, d) => sum + d.orders, 0) + monthlyRevenueData.reduce((sum, d) => sum + d.services, 0)).toLocaleString()}</span>
+            </div>
           </div>
         </div>
       </div>

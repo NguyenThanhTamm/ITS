@@ -19,7 +19,8 @@ import {
   Camera,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  Phone
 } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 
@@ -27,6 +28,7 @@ const profileSchema = zod.object({
   name: zod.string().min(2, { message: 'Họ tên phải chứa ít nhất 2 ký tự.' }),
   email: zod.string().email({ message: 'Vui lòng nhập địa chỉ email hợp lệ.' }),
   company: zod.string().min(2, { message: 'Tên công ty phải chứa ít nhất 2 ký tự.' }),
+  phone: zod.string().optional(),
 });
 
 type ProfileFormValues = zod.infer<typeof profileSchema>;
@@ -70,6 +72,7 @@ export const ProfilePage: React.FC = () => {
       name: user?.name || '',
       email: user?.email || '',
       company: user?.company || '',
+      phone: user?.phone || '',
     }
   });
 
@@ -310,6 +313,24 @@ export const ProfilePage: React.FC = () => {
             {errors.company && (
               <p className="mt-1 text-xs text-red-500">{errors.company.message}</p>
             )}
+          </div>
+
+          {/* Phone / Hotline */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+              Số điện thoại / Hotline
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <Phone className="h-4.5 w-4.5" />
+              </span>
+              <input
+                type="text"
+                {...register('phone')}
+                placeholder="Ví dụ: 090 123 4567"
+                className="block w-full pl-10 pr-3 py-2.5 rounded-lg text-xs sm:text-sm bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 focus:ring-1 focus:ring-brand-500 focus:border-brand-500 text-slate-900 dark:text-white focus:outline-none"
+              />
+            </div>
           </div>
 
           <button

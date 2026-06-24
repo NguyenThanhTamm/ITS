@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { addQuotation, addOrder } from '@/store/dashboardSlice';
 import { PATHS } from '@/routes/paths';
+import { Product } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LucideIcon,
@@ -39,16 +40,7 @@ interface ServiceItem {
   price: number;
 }
 
-interface ProductItem {
-  id: string;
-  name: string;
-  brand: string;
-  price: number;
-  description: string;
-  image: string;
-  specs: string[];
-  category: 'DEVICE' | 'CABLE' | 'ACCESSORY';
-}
+type ProductItem = Product;
 
 export const ServicesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -167,7 +159,7 @@ export const ServicesPage: React.FC = () => {
     }
   ];
 
-  const products: ProductItem[] = [
+  const products_old: any[] = [
     {
       id: 'prod-1',
       name: 'Thiết bị Tường lửa Fortinet FortiGate 60F',
@@ -570,6 +562,8 @@ export const ServicesPage: React.FC = () => {
     }
   ];
 
+  const { products } = useSelector((state: RootState) => state.dashboard);
+
   // Pricing helper calculations (Required for backward compatibility/Redux, but hidden in UI)
   const monthlyTotal = 0;
 
@@ -850,8 +844,8 @@ export const ServicesPage: React.FC = () => {
                     </div>
 
                     {/* Stock Status Badge */}
-                    <div className="absolute top-4 right-4 z-10 bg-emerald-500/90 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg">
-                      Còn hàng
+                    <div className={`absolute top-4 right-4 z-10 ${prod.inStock ? 'bg-emerald-500/90' : 'bg-red-500/90'} text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg`}>
+                      {prod.inStock ? 'Còn hàng' : 'Hết hàng'}
                     </div>
 
                     {/* Image Area */}
@@ -895,11 +889,12 @@ export const ServicesPage: React.FC = () => {
                       {/* Quantity Selector controls */}
                       <div className="flex items-center justify-between pt-3.5 border-t border-slate-100 dark:border-slate-800/40 mt-auto">
                         <span className="text-[10px] font-bold text-slate-455 dark:text-slate-400 uppercase tracking-wider">Số lượng đặt</span>
-                        <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-200/50 dark:border-slate-800/60">
+                        <div className={`flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-200/50 dark:border-slate-800/60 ${!prod.inStock ? 'opacity-50' : ''}`}>
                           <button
                             type="button"
+                            disabled={!prod.inStock}
                             onClick={() => setQuantities({ ...quantities, [prod.id]: Math.max(1, qty - 1) })}
-                            className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer"
+                            className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             -
                           </button>
@@ -908,8 +903,9 @@ export const ServicesPage: React.FC = () => {
                           </span>
                           <button
                             type="button"
+                            disabled={!prod.inStock}
                             onClick={() => setQuantities({ ...quantities, [prod.id]: Math.min(99, qty + 1) })}
-                            className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer"
+                            className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 font-bold transition-all text-xs focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             +
                           </button>
@@ -934,6 +930,14 @@ export const ServicesPage: React.FC = () => {
                           <CheckCircle2 className="h-3.5 w-3.5 shrink-0 animate-bounce" />
                           <span>Đặt hàng thành công!</span>
                         </div>
+                      ) : !prod.inStock ? (
+                        <button
+                          disabled
+                          className="px-4 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold rounded-xl text-[11px] cursor-not-allowed flex items-center space-x-1.5 shrink-0 border border-slate-300/20"
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          <span>Hết hàng</span>
+                        </button>
                       ) : (
                         <button
                           onClick={() => handleHardwareOrder(prod)}

@@ -49,7 +49,7 @@ export const ContactPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
-      
+
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -61,12 +61,12 @@ export const ContactPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* Left column: Contact Info card */}
         <div className="lg:col-span-5 space-y-6">
           <div className="glass-panel p-8 rounded-2xl space-y-8 relative overflow-hidden border border-slate-200/50 dark:border-slate-800/50">
             <div className="absolute top-0 right-0 h-16 w-16 bg-brand-500/5 rounded-full blur-xl pointer-events-none" />
-            
+
             <h2 className="text-xl font-bold text-slate-900 dark:text-white pb-4 border-b border-slate-100 dark:border-slate-850">
               Kênh Liên hệ Trực tiếp
             </h2>
@@ -78,7 +78,7 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hộp thư điện tử</h3>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">tam@tamnguyen.dev</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">ngthanhtam.it@gmail.com</p>
                   <p className="text-[10px] text-slate-450 mt-0.5">Thời gian phản hồi: Dưới 4 tiếng làm việc</p>
                 </div>
               </div>
@@ -89,7 +89,7 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Đường dây nóng hỗ trợ</h3>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">+84 909-TAM-DEV</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">+84 336 930 692</p>
                   <p className="text-[10px] text-slate-450 mt-0.5">Ưu tiên xử lý nhanh cho các đối tác đã ký hợp đồng SLA</p>
                 </div>
               </div>
@@ -152,9 +152,8 @@ export const ContactPage: React.FC = () => {
                     type="text"
                     {...register('name')}
                     placeholder="Nguyễn Văn A"
-                    className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${
-                      errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
-                    } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
+                    className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
+                      } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
                   />
                   {errors.name && (
                     <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
@@ -170,9 +169,8 @@ export const ContactPage: React.FC = () => {
                     type="email"
                     {...register('email')}
                     placeholder="ten@congty.com"
-                    className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${
-                      errors.email ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
-                    } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
+                    className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${errors.email ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
+                      } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
                   />
                   {errors.email && (
                     <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
@@ -189,9 +187,8 @@ export const ContactPage: React.FC = () => {
                   type="text"
                   {...register('subject')}
                   placeholder="Ví dụ: Đăng ký tư vấn kiểm toán hạ tầng AWS"
-                  className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${
-                    errors.subject ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
-                  } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
+                  className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${errors.subject ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
+                    } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
                 />
                 {errors.subject && (
                   <p className="mt-1 text-xs text-red-500">{errors.subject.message}</p>
@@ -207,9 +204,8 @@ export const ContactPage: React.FC = () => {
                   {...register('message')}
                   rows={5}
                   placeholder="Mô tả ngắn gọn về công nghệ bạn sử dụng, quy mô dự án và mục tiêu hỗ trợ kỹ thuật..."
-                  className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${
-                    errors.message ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
-                  } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
+                  className={`block w-full px-3.5 py-2.5 rounded-lg text-sm bg-slate-50 dark:bg-slate-955 border ${errors.message ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'
+                    } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none`}
                 />
                 {errors.message && (
                   <p className="mt-1 text-xs text-red-500">{errors.message.message}</p>

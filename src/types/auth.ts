@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   company?: string;
+  phone?: string;
   status?: 'ACTIVE' | 'BLOCKED_7_DAYS' | 'LOCKED';
   blockedUntil?: string;
   createdAt: string;
