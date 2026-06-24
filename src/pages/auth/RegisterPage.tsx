@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PATHS } from '@/routes/paths';
 import { User, Mail, Lock, Building, Check } from 'lucide-react';
 import { loadMockState, saveMockState } from '@/data/mock';
+import { registerApi } from '@/lib/api';
 import { useDispatch } from 'react-redux';
 import { addUser } from '@/store/dashboardSlice';
 
@@ -36,47 +37,27 @@ export const RegisterPage: React.FC = () => {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = (data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
-    // Simulate API registration call with localStorage mock state persistence
-    setTimeout(() => {
-      try {
-        const mockState = loadMockState();
-        
-        // Check if email already exists
-        const exists = mockState.users.some(u => u.email.toLowerCase() === data.email.toLowerCase());
-        if (exists) {
-          setIsLoading(false);
-          alert('Địa chỉ email này đã tồn tại trong hệ thống. Vui lòng đăng nhập.');
-          return;
-        }
+    try {
+      const result = await registerApi({
+        name: data.name,
+        email: data.email,
+        company: data.company,
+        password: data.password
+      });
 
-        const newUser = {
-          id: `u-${Math.floor(1000 + Math.random() * 9000)}`,
-          name: data.name,
-          email: data.email,
-          company: data.company,
-          role: 'CLIENT' as const,
-          avatar: data.name.trim().charAt(0).toUpperCase() || '?',
-          status: 'ACTIVE' as const,
-          createdAt: new Date().toISOString(),
-          password: data.password,
-        };
+      dispatch(addUser(result.user));
 
-        mockState.users.push(newUser);
-        saveMockState(mockState);
-        dispatch(addUser(newUser));
-
-        setIsLoading(false);
-        setIsSuccess(true);
-        setTimeout(() => {
-          navigate(PATHS.LOGIN);
-        }, 2000);
-      } catch (err) {
-        setIsLoading(false);
-        console.error('Registration failed', err);
-      }
-    }, 1500);
+      setIsLoading(false);
+      setIsSuccess(true);
+      setTimeout(() => {
+        navigate(PATHS.LOGIN);
+      }, 2000);
+    } catch (err: any) {
+      setIsLoading(false);
+      alert(err.message || 'Đăng ký tài khoản thất bại.');
+    }
   };
 
   if (isSuccess) {

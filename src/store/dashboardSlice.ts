@@ -42,6 +42,15 @@ const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
   reducers: {
+    setData(state, action: PayloadAction<Partial<DashboardState>>) {
+      if (action.payload.projects) state.projects = action.payload.projects;
+      if (action.payload.tickets) state.tickets = action.payload.tickets;
+      if (action.payload.quotations) state.quotations = action.payload.quotations;
+      if (action.payload.orders) state.orders = action.payload.orders;
+      if (action.payload.notifications) state.notifications = action.payload.notifications;
+      if (action.payload.users) state.users = action.payload.users;
+      if (action.payload.products) state.products = action.payload.products;
+    },
     addTicket(state, action: PayloadAction<Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'messages' | 'status'> & { clientName?: string; clientId?: string }>) {
       const { clientName, clientId, ...ticketData } = action.payload;
       const newTicket: Ticket = {
@@ -483,6 +492,7 @@ const dashboardSlice = createSlice({
 });
 
 export const {
+  setData,
   addTicket,
   addTicketMessage,
   updateTicketStatus,

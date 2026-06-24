@@ -7,6 +7,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { loginStart, loginSuccess, loginFailure } from '@/store/authSlice';
 import { RootState } from '@/store';
 import { loadMockState, saveMockState } from '@/data/mock';
+import { loginApi } from '@/lib/api';
 import { PATHS } from '@/routes/paths';
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
@@ -38,34 +39,21 @@ export const LoginPage: React.FC = () => {
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || PATHS.DASHBOARD.OVERVIEW;
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     dispatch(loginStart());
-    
-    // Validate credentials against persistent mock database users
-    setTimeout(() => {
-      const mockState = loadMockState();
-      const user = mockState.users.find(u => u.email.toLowerCase() === data.email.toLowerCase());
+    try {
+      const result = await loginApi(data.email, data.password);
       
-      if (user) {
-        if (user.password && user.password !== data.password) {
-          dispatch(loginFailure('Mật khẩu không chính xác.'));
-          return;
-        }
-        if (user.status && user.status !== 'ACTIVE') {
-          dispatch(loginFailure('Tài khoản của bạn đã bị khóa hoặc chặn bởi quản trị viên.'));
-          return;
-        }
-        
-        // Save current logged-in user in state
-        mockState.user = user;
-        saveMockState(mockState);
-        
-        dispatch(loginSuccess({ user, token: `mock-jwt-${user.role.toLowerCase()}-token` }));
-        navigate(from, { replace: true });
-      } else {
-        dispatch(loginFailure('Không tìm thấy tài khoản email này. Vui lòng đăng ký.'));
-      }
-    }, 1000);
+      // Update session storage or localStorage copy if we are in fallback mode
+      const mockState = loadMockState();
+      mockState.user = result.user;
+      saveMockState(mockState);
+
+      dispatch(loginSuccess({ user: result.user, token: result.token }));
+      navigate(from, { replace: true });
+    } catch (e: any) {
+      dispatch(loginFailure(e.message || 'Đăng nhập không thành công.'));
+    }
   };
 
 
